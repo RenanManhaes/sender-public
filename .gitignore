@@ -1,0 +1,19 @@
+# Dados de contatos (nomes e telefones) - NUNCA versionar
+dados/*
+!dados/contatos-exemplo.xlsx
+*.xlsx
+!dados/contatos-exemplo.xlsx
+*.xls
+*.csv
+*.txt
+!requirements.txt
+Registros*.md
+!docs/registros.md
+Agora*.md
+Nunca contatar*.md
+*backup*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
