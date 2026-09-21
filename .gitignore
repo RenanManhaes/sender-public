@@ -1,6 +1,7 @@
 # Dados de contatos (nomes e telefones) - NUNCA versionar
 dados/*
 !dados/contatos-exemplo.xlsx
+!dados/imagem-exemplo.jpg
 *.xlsx
 !dados/contatos-exemplo.xlsx
 *.xls

@@ -4,7 +4,7 @@ Ferramenta **paralela** ao Sender (`verificar_agora_nao.py`, comando `AgoraNao`)
 
 ## Por que existe
 
-Campanhas enviadas pela API oficial do WhatsApp (GoHighLevel e plataformas parecidas) costumam usar botões de resposta rápida, por exemplo **"Quero receber"** e **"Agora não"**. Quem respondeu "Agora não" tem mais chance de denunciar o número se receber outra mensagem. Conferir conversa por conversa seria inviável, então o verificador faz o levantamento pela busca do WhatsApp Web.
+Campanhas enviadas pela API oficial do WhatsApp costumam usar botões de resposta rápida, por exemplo **"Quero receber"** e **"Agora não"**. Quem respondeu "Agora não" tem mais chance de denunciar o número se receber outra mensagem. O verificador faz o levantamento pela busca do WhatsApp Web.
 
 ## Como usar
 
@@ -13,7 +13,7 @@ Campanhas enviadas pela API oficial do WhatsApp (GoHighLevel e plataformas parec
    ```
    AgoraNao
    ```
-3. Aperte Enter e responda se o WhatsApp já está logado (`S`/`N`).
+3. Aperte Enter e responda se o WhatsApp já está logado (**[1]** sim / **[0]** não).
 4. O robô:
    1. pesquisa `agora não` na barra de pesquisa;
    2. detecta sozinho o painel de resultados que rola e **desce até o fim**, insistindo algumas vezes no final (a busca carrega em lotes);
@@ -57,7 +57,7 @@ A busca do WhatsApp Web só enxerga mensagens **sincronizadas para o navegador**
 Consequências:
 
 - Respostas "Agora não" **anteriores ao histórico sincronizado** não aparecem.
-- Para esse período, a fonte completa é a **plataforma que enviou a campanha**: o histórico de execução do workflow (o caminho do botão) ou a API de conversas.
+- Para esse período, a fonte completa é a **plataforma que enviou a campanha**: o histórico de execução do workflow ou a API de conversas.
 - Para conferir se há respostas antigas: pesquise "agora não" no **celular** e role até o fim.
 
 ## Diagnóstico

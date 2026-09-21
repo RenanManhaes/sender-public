@@ -24,7 +24,7 @@ from selenium.webdriver.common.keys import Keys
 
 import sender  # reaproveita configuração, login e validação de números do Sender
 
-TERMO_BUSCA = "agora não"       # texto pesquisado na busca do WhatsApp Web
+TERMO_BUSCA = "agora não"
 RESPOSTA_EXATA = "agora não"          # só conta quem mandou exatamente isso
 ABA_NAO_ENVIAR = "Não enviar"
 MOTIVO = "Respondeu \"Agora não\""
@@ -173,12 +173,12 @@ def numero_do_titulo(titulo):
 
 def cruzar_com_planilha(numeros):
     import pandas as pd
-    df = pd.read_excel(sender.PLANILHA, sheet_name=sender.ABA, dtype=str)
+    df = sender.ler_planilha()
     na_planilha = []
     for i, linha in df.iterrows():
         numero = sender.formatar_numero(linha[sender.COLUNA_NUMERO])
         if numero and numero in numeros:
-            na_planilha.append({"linha": i + 2, "nome": sender.nome_da_planilha(linha[sender.COLUNA_NOME]),
+            na_planilha.append({"linha": sender.linha_excel(i), "nome": sender.nome_da_planilha(linha[sender.COLUNA_NOME]),
                                 "numero": numero})
     return na_planilha
 
@@ -199,7 +199,7 @@ def ler_registro_anterior():
 
 
 def salvar_resultado(achados, na_planilha):
-    """Registro ACUMULADO 'Agora não.md' na pasta de dados: quem já foi registrado
+    """Registro ACUMULADO 'Agora não.md' no Markdown: quem já foi registrado
     continua lá; quem aparecer pela primeira vez entra com a data de hoje."""
     anteriores = ler_registro_anterior()
     hoje = f"{datetime.now():%d/%m/%Y}"
@@ -242,10 +242,10 @@ def mover_para_nao_enviar(na_planilha):
         destino = livro[ABA_NAO_ENVIAR]
     else:
         destino = livro.create_sheet(ABA_NAO_ENVIAR)
-        cabecalho = [c.value for c in principal[1]]
+        cabecalho = [c.value for c in principal[sender.LINHA_CABECALHO + 1]]
         destino.append(cabecalho + ["Motivo", "Movido em"])
 
-    cabecalho = [c.value for c in principal[1]]
+    cabecalho = [c.value for c in principal[sender.LINHA_CABECALHO + 1]]
     col_numero = cabecalho.index(sender.COLUNA_NUMERO)
     movidos = 0
     for c in sorted(na_planilha, key=lambda c: c["linha"], reverse=True):   # de baixo pra cima
@@ -300,15 +300,15 @@ def main():
     print(f"  Estão na planilha:            {len(na_planilha)}")
     for c in na_planilha:
         print(f"    linha {c['linha']:>3} - {c['nome']} - {c['numero']}")
-    print(f"  Lista completa na pasta de dados: Sender/{Path(ARQUIVO_RESULTADO).name}")
+    print(f"  Lista completa no Markdown: Sender/{Path(ARQUIVO_RESULTADO).name}")
     print(LINHA)
 
     if not na_planilha:
         return
     resposta = sender.perguntar(
         f"\n  Mover esses {len(na_planilha)} contatos para a aba \"{ABA_NAO_ENVIAR}\"? "
-        "(faço backup antes) [S/N]: ", ["s", "n"])
-    if resposta == "s":
+        "(faço backup antes)\n  [1] Sim, mover   [0] Não: ", ["1", "0"])
+    if resposta == "1":
         try:
             mover_para_nao_enviar(na_planilha)
         except PermissionError:

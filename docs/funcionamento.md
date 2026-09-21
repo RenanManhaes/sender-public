@@ -31,7 +31,7 @@ No computador, o `wa.me` abre uma página intermediária ("Continuar para a conv
 
 ## A mensagem
 
-Definida em `MENSAGENS` no topo do `sender.py` (a ativa aparece no menu e pode ser trocada em **[3] Trocar a mensagem**). Cada seção do `Registros.md` registra qual mensagem foi usada. O marcador `{Nome}` é trocado pelo nome da **coluna de nome** configurada em `COLUNA_NOME`, exatamente como está escrito lá.
+Definida em `MENSAGENS` no topo do `sender.py` (a ativa aparece no menu e pode ser trocada em **[3] Trocar a mensagem**). Cada seção do `Registros.md` registra qual mensagem foi usada. O marcador `{Nome}` é trocado pelo nome da **coluna de nome** da planilha, exatamente como está escrito lá.
 
 No **teste**, o nome digitado passa por um tratamento: usa só o primeiro nome, com inicial maiúscula, ignorando partículas (`de`, `da`, `do`, `dos`, `das`, `e`).
 
@@ -64,7 +64,7 @@ A memória do Sender é o próprio `Registros.md`. Antes de cada disparo ele lê
 - **Falhas definitivas** → nunca são tentadas de novo.
 - **Erros retentáveis** → voltam para a fila no próximo disparo (a mensagem comprovadamente **não saiu**).
 
-A seleção pega os **próximos N pendentes na ordem da planilha**. Exemplo real: um disparo de 30 foi pausado na linha 19; no disparo seguinte a fila começou pelas 3 linhas que tinham falhado antes do Enter (10–12) e depois seguiu da linha 20.
+A seleção pega os **próximos N pendentes na ordem da planilha**. Exemplo: um disparo pausado na linha 19 continua, no disparo seguinte, pelas linhas que tinham falhado antes do envio e depois segue da linha 20.
 
 As linhas mostradas (`linha 20 da planilha`) usam a **mesma numeração do Excel** (linha 1 = cabeçalho).
 
@@ -78,7 +78,7 @@ As linhas mostradas (`linha 20 da planilha`) usam a **mesma numeração do Excel
 | 🧪 Teste enviado | Envio de teste para o seu número | — (não conta como lead) |
 | ❌ Número errado | O WhatsApp mostrou "número compartilhado por url é inválido" | Não |
 | ❌ Número fora do padrão | O número não é um telefone brasileiro válido | Não |
-| ⏭️ Pulado por você | Você escolheu **[S]** na pausa | Não |
+| ⏭️ Pulado por você | Você escolheu **[2] Pular** na pausa | Não |
 | ⚠️ Verificar no WhatsApp | Enter foi apertado, mas não deu para confirmar se saiu | **Não** (evita duplicar — confira manualmente) |
 | ⚠️ Erro: conversa não carregou | A conversa não abriu nem com o tempo extra | Sim |
 | ⚠️ Erro: mensagem não apareceu | A conversa abriu, mas o texto não apareceu na caixa | Sim |
@@ -94,18 +94,18 @@ Regra de ouro: **só é retentado o que falhou antes do Enter.** Qualquer coisa 
 | Quando você aperta ESC | O que acontece |
 |---|---|
 | Aguardando login | Fecha o Chrome e volta ao menu |
-| Carregando / aguardando para enviar | Pausa. **[C]** recomeça esse contato do zero (nada tinha saído). **[S]** pula esse contato. **[P]** para. |
+| Carregando / aguardando para enviar | Pausa. **[1]** recomeça esse contato do zero (nada tinha saído). **[2]** pula esse contato. **[0]** para. |
 | Logo depois do Enter | Termina de registrar o envio e pausa na etapa seguinte |
-| Pausa entre contatos | Pausa. **[S]** pula o **próximo** contato (mostrado na tela). |
+| Pausa entre contatos | Pausa. **[2]** pula o **próximo** contato (mostrado na tela). |
 
-Depois de **[P]**, o Chrome continua aberto e logado; o próximo disparo não pede QR code.
+Depois de **[0] Parar**, o Chrome continua aberto e logado; o próximo disparo não pede QR code.
 
 ---
 
 ## Proteções
 
 - **Rascunho antigo:** se a caixa tiver o texto duas vezes (rascunho anterior + mensagem nova), o robô limpa e recarrega a conversa uma vez antes de enviar.
-- **Freio de erros:** 3 erros seguidos → pausa com `[C] Continuar / [P] Parar`.
+- **Freio de erros:** 3 erros seguidos → pausa com `[1] Continuar / [0] Parar`.
 - **Login conferido:** o disparo só começa quando a lista de conversas (`#pane-side`) aparece.
 - **Aviso de número inválido:** detectado pelo pop-up do WhatsApp (com plano B pela frase exata), para que conversas que contenham a palavra "inválido" não enganem o robô.
 - **PC acordado:** `SetThreadExecutionState` impede a suspensão do Windows só enquanto o Sender roda.

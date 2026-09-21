@@ -1,6 +1,6 @@
 # Registros na pasta `dados/`
 
-O Sender grava cada envio em `dados\Registros.md`. Esse arquivo é ao mesmo tempo o **histórico** para você consultar e a **memória** do robô.
+O Sender grava cada envio em `dados/Registros.md`. Esse arquivo é ao mesmo tempo o **histórico** para você consultar e a **memória** do robô.
 
 ## Formato
 
@@ -9,22 +9,22 @@ Uma seção por teste ou disparo, a mais recente no final:
 ```markdown
 ---
 
-## 🚀 Disparo oficial — 18/09/2026 às 18:51
+## 🚀 Disparo oficial — 01/01/2026 às 10:00
 
 - **Planilha:** `contatos.xlsx`
-- **Mensagem:** Convite para o evento (`evento`)
+- **Mensagem:** Convite (exemplo) (`convite`)
 - **Contatos selecionados:** 30
 
 | Nº | Nome | Número | Status | Horário |
 |---:|---|---|---|---|
-| 2 | Fulano | 5511999999999 | ✅ Enviado | 18/09 18:52:09 |
-| 5 | Ciclano | 13055550123 | ❌ Número fora do padrão | 18/09 18:55:20 |
+| 2 | Fulano | 5511900001111 | ✅ Enviado | 01/01 10:01:12 |
+| 5 | Ciclano | 13055550123 | ❌ Número fora do padrão | 01/01 10:02:40 |
 
 > **Resumo:** ✅ Enviado: **1** · ❌ Número fora do padrão: **1** · ⏱ 17min · 🛑 **interrompido** às 19:09
 ```
 
 - **Nº** = linha da planilha no Excel (testes aparecem como `Teste`).
-- **Mensagem** = qual mensagem foi usada nesse disparo. A memória de quem já recebeu é separada por mensagem; seções antigas, sem essa linha, contam como `evento`.
+- **Mensagem** = qual mensagem foi usada nesse disparo. A memória de quem já recebeu é separada por mensagem; seções sem essa linha contam como a mensagem padrão.
 - Cada linha é gravada **na hora** do envio: se o PC desligar no meio, o que foi feito fica registrado.
 - O resumo diz `finalizado` ou `interrompido` (ESC → Parar, Ctrl+C ou Chrome travado).
 - A nota pode ficar aberta na pasta `dados/` durante o disparo; ela atualiza sozinha.
