@@ -106,6 +106,8 @@ MENSAGEM_ATIVA = "convite"
 # detectados sozinhos). "usar_controle": só recebe quem está "Não" na coluna de
 # controle (ex.: "Mensagem enviada?") e, após o envio, a linha vira "Sim".
 CAMPANHAS = {
+    # "excluir": planilhas (na mesma pasta) cujos números NUNCA recebem a campanha.
+    # Ex.: "excluir": ["clientes.xlsx"] para não mandar convite a quem já comprou.
     "convite": {"nome": "Convite", "publico": "lista de contatos",
                 "planilha": "contatos.xlsx", "mensagem": "convite"},
     "convite_imagem": {"nome": "Convite com imagem", "publico": "lista de contatos",
@@ -900,7 +902,7 @@ def contatos_da_planilha(df, enviados, falhas, quantidade):
             continue
         if numero in enviados or numero in falhas or numero in vistos:   # vistos: repetido na planilha
             continue
-        if bloqueado(numero):
+        if bloqueado(numero) or numero in NUMEROS_EXCLUIDOS:
             continue
         vistos.add(numero)
         selecionados.append((posicao, nome_da_planilha(linha[COLUNA_NOME]), bruto))
@@ -1031,6 +1033,9 @@ def proximo_contato(contatos, posicao_atual, ja_enviados):
 # -------------------------------- interface -------------------------------
 
 CAMPANHA_ATIVA = "Personalizada"      # nome da campanha em uso (preenchido ao ativar)
+CAMPANHA_CHAVE = None                 # chave em CAMPANHAS (None = personalizada)
+NUMEROS_EXCLUIDOS = set()             # números das planilhas de "excluir" da campanha
+ROTULO_EXCLUIDOS = ""                 # ex.: "clientes.xlsx"
 
 
 def perguntar(texto, opcoes):
@@ -1050,8 +1055,17 @@ def voltar_ao_menu():
 def ativar_campanha(chave):
     """Liga planilha + mensagem + regras da campanha. Devolve None ou o erro."""
     global PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA
-    global MENSAGEM_ATIVA, CAMPANHA_ATIVA
+    global MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS
     camp = CAMPANHAS[chave]
+    excluidos = set()
+    for nome_arquivo in camp.get("excluir", []):
+        arquivo = Path(PASTA_PLANILHAS) / nome_arquivo
+        if not arquivo.exists():
+            return f"planilha de exclusão não encontrada: {arquivo}"
+        det = detectar_planilha(arquivo)
+        if not det:
+            return f"não achei a coluna de telefone em {arquivo.name}"
+        excluidos |= set(ler_planilha(arquivo, cabecalho=det[0])[det[2]].map(formatar_numero).dropna())
     caminho = Path(PASTA_PLANILHAS) / camp["planilha"]
     if not caminho.exists():
         return f"planilha não encontrada: {caminho}"
@@ -1069,19 +1083,22 @@ def ativar_campanha(chave):
     COLUNA_JA_ENVIADA = controle
     MENSAGEM_ATIVA = camp["mensagem"]
     CAMPANHA_ATIVA = f"{camp['nome']} ({camp['publico']})"
+    CAMPANHA_CHAVE = chave
+    NUMEROS_EXCLUIDOS = excluidos
+    ROTULO_EXCLUIDOS = ", ".join(camp.get("excluir", []))
     return None
 
 
 def estado_atual():
     return (PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA,
-            MENSAGEM_ATIVA, CAMPANHA_ATIVA)
+            MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS)
 
 
 def restaurar(estado):
     global PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA
-    global MENSAGEM_ATIVA, CAMPANHA_ATIVA
+    global MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS
     (PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA,
-     MENSAGEM_ATIVA, CAMPANHA_ATIVA) = estado
+     MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS) = estado
 
 
 def numeros_da_campanha():
@@ -1090,12 +1107,14 @@ def numeros_da_campanha():
     numeros = df[COLUNA_NUMERO].map(formatar_numero)
     enviados, falhas, ultimo = ler_historico() if PULAR_JA_ENVIADOS else (set(), set(), None)
     fora = df.apply(marcado_como_enviado, axis=1) if COLUNA_JA_ENVIADA else pd.Series(False, index=df.index)
-    unicos = {n for n in numeros[~fora].dropna() if not bloqueado(n)}      # repetido conta 1x
+    todos = {n for n in numeros[~fora].dropna() if not bloqueado(n)}       # repetido conta 1x
+    unicos = todos - NUMEROS_EXCLUIDOS
     return {
         "df": df, "enviados": enviados, "falhas": falhas, "ultimo": ultimo,
         "total": len(df), "invalidos": int(numeros.isna().sum()), "fora_controle": int(fora.sum()),
         "ja_receberam": len(unicos & enviados), "pendentes": len(unicos - enviados - falhas),
         "falharam": len((unicos & falhas) - enviados),
+        "excluidos": len(todos & NUMEROS_EXCLUIDOS),
     }
 
 
@@ -1110,6 +1129,9 @@ def cartao_campanha(n):
     print(f"  📣 Campanha: {CAMPANHA_ATIVA}")
     print(f"     Planilha: {Path(PLANILHA).name}  (atualizada em {atualizada:%d/%m às %H:%M})")
     print(f"     Mensagem: {descricao_mensagem()}")
+    imagem = MENSAGENS[MENSAGEM_ATIVA].get("imagem")
+    if imagem and not Path(imagem).exists():
+        print(f"     ⚠️  IMAGEM NÃO ENCONTRADA: coloque {Path(imagem).name} em {Path(imagem).parent}")
     if COLUNA_JA_ENVIADA:
         print(f"     Regra:    só recebe quem está \"Não\" em \"{COLUNA_JA_ENVIADA}\" (vira \"Sim\" após o envio)")
     print()
@@ -1118,6 +1140,8 @@ def cartao_campanha(n):
     extras = []
     if COLUNA_JA_ENVIADA:
         extras.append(f"{n['fora_controle']} já marcados \"Sim\" na planilha")
+    if n.get("excluidos"):
+        extras.append(f"{n['excluidos']} ficam de fora por estarem em {ROTULO_EXCLUIDOS}")
     if n["falharam"]:
         extras.append(f"{n['falharam']} com falha antes (não são tentados de novo)")
     if extras:
@@ -1170,7 +1194,7 @@ def escolher_campanha():
             n = numeros_da_campanha()
             imagem = "  🖼 com imagem" if MENSAGENS[camp["mensagem"]].get("imagem") else ""
             situacao = f"{n['pendentes']} pendentes · planilha {camp['planilha']}{imagem}"
-        ativa = "  ← ativa" if estado[6].startswith(camp["nome"]) else ""
+        ativa = "  ← ativa" if chave == estado[7] else ""
         print(f"\n  [{i}] {camp['nome']} — {camp['publico']}{ativa}")
         print(f"      {situacao}")
         restaurar(estado)
@@ -1192,8 +1216,9 @@ def escolher_campanha():
 
 def campanha_personalizada():
     """Monta uma campanha escolhendo a planilha e a mensagem à mão."""
-    global CAMPANHA_ATIVA
+    global CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS
     estado = estado_atual()
+    CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS = None, set(), ""
     if not trocar_planilha():
         restaurar(estado)
         return
