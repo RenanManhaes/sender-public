@@ -58,6 +58,7 @@ A memória de quem já recebeu é **separada por mensagem**: quem recebeu uma me
 | `publico` | `"lista de contatos"` | Para quem é (aparece ao lado do nome) |
 | `planilha` | `"contatos.xlsx"` | Arquivo dentro de `PASTA_PLANILHAS`; cabeçalho e colunas são detectados sozinhos |
 | `mensagem` | `"convite_imagem"` | Chave em `MENSAGENS` |
+| `excluir` | `["clientes.xlsx"]` | Planilhas (na mesma pasta) cujos números **nunca** recebem esta campanha |
 | `usar_controle` | `True` | Só recebe quem está "Não" na coluna de controle e marca "Sim" após o envio |
 
 `CAMPANHA_INICIAL` — a campanha que já vem escolhida ao abrir o Sender.

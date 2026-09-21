@@ -15,6 +15,7 @@ Não tem IA no processo: é automação de navegador, feita para rodar no seu co
 - **Nome na mensagem:** `{Nome}` vira o primeiro nome da planilha ("MARIA SILVA" → "Maria").
 - **Qualquer planilha:** descobre sozinho a linha do cabeçalho e as colunas de nome e telefone. Funciona até com exportações que têm relatório antes da tabela.
 - **Coluna de controle (opcional):** só recebe quem está com **"Não"** numa coluna como "Mensagem enviada?". Depois de cada envio confirmado, a linha vira **"Sim"** e a planilha é salva.
+- **Lista de exclusão por campanha:** por exemplo, não mandar o convite para quem já comprou (`"excluir": ["clientes.xlsx"]`).
 - **Nunca envia duas vezes** para a mesma pessoa. A memória é o próprio arquivo de registro, separada por mensagem.
 - **Confere se a mensagem saiu:** só conta como enviado quando aparece uma mensagem **nova** com o texto na conversa.
 - **Valida números brasileiros:** celular com 9, fixo e celular antigo sem o 9. O que não for telefone válido fica de fora.
@@ -95,6 +96,23 @@ Na primeira vez, escaneie o QR code. O perfil próprio do Chrome guarda o login 
 
 ---
 
+## Relatório para clientes
+
+```bash
+python relatorio.py
+```
+Também dá para usar o atalho `Relatorio.bat`.
+
+Gera `dados/Relatório de campanhas.md`, que fica ótimo no Obsidian. O relatório traz:
+- resumo executivo;
+- resultado por campanha, com gráfico;
+- situação atual de cada campanha;
+- qualidade das bases, com os motivos de número inválido;
+- proteções da reputação do número;
+- linha do tempo e as mensagens usadas.
+
+Tem **só números agregados**, sem nomes nem telefones. Rode de novo depois de cada disparo para atualizar. O título e a data do evento ficam no topo do `relatorio.py`.
+
 ## Registro
 
 Cada disparo vira uma seção em `dados/Registros.md`:
@@ -123,7 +141,8 @@ Esse arquivo é a memória do robô: é por ele que o Sender sabe quem já receb
 sender-whatsapp-bot/
 ├── sender.py               # o robô (configuração no topo do arquivo)
 ├── verificar_agora_nao.py  # verificador "Agora não" (somente leitura)
-├── Sender.bat / AgoraNao.bat
+├── relatorio.py           # relatório agregado para clientes
+├── Sender.bat / AgoraNao.bat / Relatorio.bat
 ├── requirements.txt
 ├── dados/                  # planilhas, imagens e registros (ignorado pelo git)
 │   ├── contatos-exemplo.xlsx
