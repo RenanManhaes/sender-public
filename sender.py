@@ -168,8 +168,9 @@ def linha_excel(indice):
 
 
 # Palavras usadas para reconhecer as colunas, em ordem de preferência
-PISTAS_TELEFONE = ["whatsapp", "whats", "celular", "telefone", "fone", "atualiza", "phone",
-                   "numero", "num.", "contato", "cel"]
+PISTAS_TELEFONE = ["whatsapp", "whats", "celular", "telefone", "fone", "atualiza", "phone"]
+# Estas valem só como palavra inteira: "numero" não pode casar com "Número do pedido"
+PISTAS_TELEFONE_EXATAS = ["numero", "num", "contato", "cel", "cel."]
 
 
 def sem_acento(texto):
@@ -177,20 +178,41 @@ def sem_acento(texto):
                    if not unicodedata.combining(c)).lower()
 
 
+def cara_de_telefone(coluna):
+    """True se o nome da coluna parece ser de telefone."""
+    nome = sem_acento(coluna)
+    if any(p in nome for p in PISTAS_TELEFONE):
+        return True
+    palavras = re.split(r"[^a-z0-9]+", nome)
+    return any(p.strip(".") in palavras for p in PISTAS_TELEFONE_EXATAS)
+
+
 def detectar_planilha(caminho):
     """Acha a linha de cabeçalho e as colunas de nome e telefone de uma planilha.
     Retorna (linha_cabecalho, coluna_nome, coluna_numero, colunas) ou None."""
     bruto = pd.read_excel(caminho, sheet_name=ABA, header=None, dtype=str, nrows=40)
+    melhor, melhor_nota = None, -1.0
     for i in range(len(bruto)):
         colunas = [str(c).strip() for c in bruto.iloc[i].tolist() if isinstance(c, str) and c.strip()]
-        baixas = [c.lower() for c in colunas]
-        baixas = [sem_acento(c) for c in baixas]
+        baixas = [sem_acento(c) for c in colunas]
         tem_nome = any("nome" in c for c in baixas)
-        tem_tel = any(p in c for c in baixas for p in PISTAS_TELEFONE)
-        if tem_nome and tem_tel:
-            df = ler_planilha(caminho, cabecalho=i)
-            return (i, escolher_coluna_nome(df), escolher_coluna_telefone(df), list(df.columns))
-    return None
+        tem_tel = any(cara_de_telefone(c) for c in colunas)
+        if not (tem_nome and tem_tel):
+            continue
+        df = ler_planilha(caminho, cabecalho=i)
+        col_tel = escolher_coluna_telefone(df)
+        # uma linha de resumo ("Nome do evento" + "Número do pedido") também passa na
+        # peneira dos nomes; fica com o cabeçalho cuja coluna é mais "telefone pura"
+        nota = 0.0
+        if col_tel:
+            preenchidas = df[col_tel].notna().sum()
+            nota = df[col_tel].map(formatar_numero).notna().sum() / preenchidas if preenchidas else 0.0
+        if nota > melhor_nota:
+            melhor, melhor_nota = (i, escolher_coluna_nome(df), col_tel, list(df.columns)), nota
+        if nota == 1.0:                    # cabeçalho perfeito: não preciso olhar mais
+            break
+    # nota 0 = nenhuma coluna com telefone de verdade: melhor avisar do que fingir
+    return melhor if melhor_nota > 0 else None
 
 
 def escolher_coluna_controle(df):
@@ -245,8 +267,7 @@ def escolher_coluna_nome(df):
 
 def escolher_coluna_telefone(df):
     """Entre as colunas com cara de telefone, fica com a que tem mais números válidos."""
-    candidatas = [str(c) for c in df.columns
-                  if any(p in sem_acento(c) for p in PISTAS_TELEFONE)]
+    candidatas = [str(c) for c in df.columns if cara_de_telefone(c)]
     if not candidatas:
         return None
     return max(candidatas, key=lambda c: df[c].map(formatar_numero).notna().sum())
@@ -1181,6 +1202,7 @@ CAMPANHA_CHAVE = None                 # chave em CAMPANHAS (None = personalizada
 NUMEROS_EXCLUIDOS = set()             # números das planilhas de "excluir" da campanha
 SEGMENTAR_COLUNA = None               # coluna que divide o público (ex.: "É membro?")
 SEGMENTO = None                       # valor escolhido (ex.: "Não" = não membros)
+SEGMENTO_ESCOLHIDO = False            # False = ainda não passou pela pergunta do público
 ROTULO_EXCLUIDOS = ""                 # ex.: "clientes.xlsx"
 
 
@@ -1202,7 +1224,7 @@ def ativar_campanha(chave):
     """Liga planilha + mensagem + regras da campanha. Devolve None ou o erro."""
     global PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA
     global MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS
-    global SEGMENTAR_COLUNA, SEGMENTO
+    global SEGMENTAR_COLUNA, SEGMENTO, SEGMENTO_ESCOLHIDO
     camp = CAMPANHAS[chave]
     excluidos = set()
     for nome_arquivo in camp.get("excluir", []):
@@ -1233,7 +1255,7 @@ def ativar_campanha(chave):
     CAMPANHA_CHAVE = chave
     NUMEROS_EXCLUIDOS = excluidos
     SEGMENTAR_COLUNA = camp.get("segmentar") or None
-    SEGMENTO = None                   # o público é escolhido depois, no menu
+    SEGMENTO, SEGMENTO_ESCOLHIDO = None, False    # o público é escolhido depois, no menu
     ROTULO_EXCLUIDOS = ", ".join(camp.get("excluir", []))
     return None
 
@@ -1241,16 +1263,19 @@ def ativar_campanha(chave):
 def estado_atual():
     return (PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA,
             MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS,
-            SEGMENTAR_COLUNA, SEGMENTO)
+            SEGMENTAR_COLUNA, SEGMENTO, SEGMENTO_ESCOLHIDO)
 
 
 def restaurar(estado):
     global PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA
     global MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS
-    global SEGMENTAR_COLUNA, SEGMENTO
+    global SEGMENTAR_COLUNA, SEGMENTO, SEGMENTO_ESCOLHIDO
     (PLANILHA, LINHA_CABECALHO, COLUNA_NOME, COLUNA_NUMERO, COLUNA_JA_ENVIADA,
      MENSAGEM_ATIVA, CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS,
-     SEGMENTAR_COLUNA, SEGMENTO) = estado
+     SEGMENTAR_COLUNA, SEGMENTO, SEGMENTO_ESCOLHIDO) = estado
+
+
+SEGMENTO_VAZIO = "(vazio)"             # rótulo do público sem valor na coluna
 
 
 def no_segmento(linha):
@@ -1258,7 +1283,10 @@ def no_segmento(linha):
     if not SEGMENTAR_COLUNA or SEGMENTO is None or SEGMENTAR_COLUNA not in linha:
         return True
     valor = linha[SEGMENTAR_COLUNA]
-    return not pd.isna(valor) and str(valor).strip().lower() == str(SEGMENTO).strip().lower()
+    vazio = pd.isna(valor) or not str(valor).strip()
+    if SEGMENTO == SEGMENTO_VAZIO:
+        return vazio
+    return not vazio and str(valor).strip().lower() == str(SEGMENTO).strip().lower()
 
 
 def valores_do_segmento(df=None):
@@ -1267,15 +1295,19 @@ def valores_do_segmento(df=None):
     df = ler_planilha() if df is None else df
     if not SEGMENTAR_COLUNA or SEGMENTAR_COLUNA not in df.columns:
         return []
-    contagem, vistos = Counter(), set()
+    contagem, rotulos, vistos = Counter(), {}, set()
     for _, linha in df.iterrows():
         numero = formatar_numero(linha[COLUNA_NUMERO])
         if not numero or numero in vistos or bloqueado(numero) or numero in NUMEROS_EXCLUIDOS:
             continue
         vistos.add(numero)
         valor = linha[SEGMENTAR_COLUNA]
-        contagem["(vazio)" if pd.isna(valor) else str(valor).strip()] += 1
-    return contagem.most_common()
+        texto = "" if pd.isna(valor) else str(valor).strip()
+        rotulo = SEGMENTO_VAZIO if not texto else texto
+        chave = rotulo.lower()                 # "Sim" e "sim " são o mesmo público
+        rotulos.setdefault(chave, rotulo)
+        contagem[chave] += 1
+    return [(rotulos[chave], qtd) for chave, qtd in contagem.most_common()]
 
 
 def numeros_da_campanha():
@@ -1333,7 +1365,8 @@ def cartao_campanha(n):
     if imagem and not Path(imagem).exists():
         print(f"     ⚠️  IMAGEM NÃO ENCONTRADA: coloque {Path(imagem).name} em {Path(imagem).parent}")
     if SEGMENTAR_COLUNA:
-        publico = SEGMENTO if SEGMENTO is not None else "todos"
+        publico = ("ainda não escolhido" if not SEGMENTO_ESCOLHIDO
+                   else SEGMENTO if SEGMENTO is not None else "todos")
         print(f"     Público:  \"{SEGMENTAR_COLUNA}\" = {publico}   (troque em [3])")
     if COLUNA_JA_ENVIADA:
         print(f"     Regra:    só recebe quem está \"Não\" em \"{COLUNA_JA_ENVIADA}\" (vira \"Sim\" após o envio)")
@@ -1383,10 +1416,11 @@ def menu_inicial(chrome_ligado):
 
 def escolher_segmento():
     """Pergunta para qual público da planilha a campanha vai (ex.: membro / não membro)."""
-    global SEGMENTO
+    global SEGMENTO, SEGMENTO_ESCOLHIDO
     valores = valores_do_segmento()
     if not valores:
-        print(f"  ⚠️  A planilha não tem a coluna \"{SEGMENTAR_COLUNA}\" - a campanha vai para todos.")
+        print(f"  ⚠️  Não achei contatos na coluna \"{SEGMENTAR_COLUNA}\" - a campanha vai para todos.")
+        SEGMENTO, SEGMENTO_ESCOLHIDO = None, True
         voltar_ao_menu()
         return
     print(f"\n{LINHA}")
@@ -1397,6 +1431,7 @@ def escolher_segmento():
     print(f"  [{len(valores) + 1}] Todos")
     escolha = perguntar("  Escolha: ", [str(i) for i in range(1, len(valores) + 2)])
     SEGMENTO = None if int(escolha) > len(valores) else valores[int(escolha) - 1][0]
+    SEGMENTO_ESCOLHIDO = True
     print(f"  ✅ Público: {SEGMENTO if SEGMENTO is not None else 'todos'}")
 
 
@@ -1416,7 +1451,8 @@ def escolher_campanha():
         else:
             n = numeros_da_campanha()
             imagem = "  🖼 com imagem" if MENSAGENS[camp["mensagem"]].get("imagem") else ""
-            situacao = f"{n['pendentes']} pendentes · planilha {camp['planilha']}{imagem}"
+            publico = "  ❓ pergunta o público antes de enviar" if camp.get("segmentar") else ""
+            situacao = f"{n['pendentes']} pendentes · planilha {camp['planilha']}{imagem}{publico}"
         ativa = "  ← ativa" if chave == estado[7] else ""
         print(f"\n  [{i}] {camp['nome']} — {camp['publico']}{ativa}")
         print(f"      {situacao}")
@@ -1443,8 +1479,10 @@ def escolher_campanha():
 def campanha_personalizada():
     """Monta uma campanha escolhendo a planilha e a mensagem à mão."""
     global CAMPANHA_ATIVA, CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS
+    global SEGMENTAR_COLUNA, SEGMENTO, SEGMENTO_ESCOLHIDO
     estado = estado_atual()
     CAMPANHA_CHAVE, NUMEROS_EXCLUIDOS, ROTULO_EXCLUIDOS = None, set(), ""
+    SEGMENTAR_COLUNA, SEGMENTO, SEGMENTO_ESCOLHIDO = None, None, False
     if not trocar_planilha():
         restaurar(estado)
         return
@@ -1664,6 +1702,10 @@ def main():
 
             if mensagem_e_rascunho():
                 aviso_rascunho()
+                continue
+
+            if SEGMENTAR_COLUNA and not SEGMENTO_ESCOLHIDO:
+                escolher_segmento()          # campanha segmentada não sai sem escolher o público
                 continue
 
             contatos = escolher_quantidade(n) if escolha == "2" else None
