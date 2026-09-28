@@ -46,6 +46,7 @@ A coluna **de telefone** é lida como texto e normalizada:
 | Formato na planilha | Exemplo | Resultado |
 |---|---|---|
 | Celular BR: DDD + 9 + 8 dígitos | `15991234567` | `5515991234567` ✅ |
+| Com 0 na frente (0 + DDD) | `011 99123-4567` | `5511991234567` ✅ |
 | Já com 55 | `5515991234567` | `5515991234567` ✅ |
 | Fixo BR: DDD + 2..5 + 7 dígitos | `1532345678` | `551532345678` ✅ |
 | Celular antigo sem o 9 | `1698765432` | `5516998765432` ✅ (o 9 é adicionado) |

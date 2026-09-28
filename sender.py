@@ -40,6 +40,11 @@ PASTA = Path(__file__).resolve().parent
 # Pasta com as planilhas (o menu "Personalizada" lista tudo o que está aqui)
 PASTA_PLANILHAS = str(PASTA / "dados")
 
+# Arquivo (editável) com as campanhas e mensagens. Se existir, ele MANDA:
+# o que estiver nele substitui as campanhas e mensagens escritas aqui embaixo.
+# O menu [3] relê o arquivo, então dá para criar campanha com o Sender aberto.
+ARQUIVO_CAMPANHAS = str(Path(PASTA_PLANILHAS) / "Campanhas.md")
+
 # Planilha usada se nenhuma campanha for ativada (as campanhas definem a sua)
 PLANILHA = str(Path(PASTA_PLANILHAS) / "contatos.xlsx")
 ABA = 0                               # aba lida (0 = primeira)
@@ -248,7 +253,7 @@ def formatar_numero(valor):
     """
     if pd.isna(valor):
         return None
-    digitos = re.sub(r"\D", "", str(valor).removesuffix(".0"))
+    digitos = re.sub(r"\D", "", str(valor).removesuffix(".0")).lstrip("0")   # 011... -> 11...
     if digitos.startswith("55") and len(digitos) in (12, 13):
         digitos = digitos[2:]
     if len(digitos) == 11 and digitos[2] == "9":     # celular: DDD + 9xxxx-xxxx
@@ -300,6 +305,98 @@ class ParadaEmergencia(Exception):
 
 
 RESUMO = Counter()                    # contagem de status desta execução
+
+# --------------------------- campanhas do arquivo --------------------------
+#
+# Formato do Campanhas.md (uma campanha por bloco "## "):
+#
+#   ## Convite para o evento
+#   id: evento                  <- opcional; guarda a memória de quem já recebeu
+#   publico: leads
+#   planilha: contatos.xlsx
+#   imagem: banner.jpg          <- opcional (foto com legenda)
+#   excluir: clientes.xlsx  <- opcional, separe por vírgula
+#   controle: sim               <- opcional: só envia para quem está "Não" na coluna de controle
+#   mensagem:
+#   Olá {Nome}! Tudo bem?
+#   ...
+
+CAMPOS_CAMPANHA = {"id", "publico", "planilha", "imagem", "excluir", "controle", "mensagem"}
+
+
+def _slug(texto):
+    limpo = re.sub(r"[^a-z0-9]+", "_", texto.lower().strip())
+    return limpo.strip("_") or "campanha"
+
+
+def ler_arquivo_campanhas(caminho=None):
+    """Lê o Campanhas.md. Devolve (mensagens, campanhas, erros)."""
+    arquivo = Path(caminho or ARQUIVO_CAMPANHAS)
+    if not arquivo.exists():
+        return {}, {}, []
+    mensagens, campanhas, erros = {}, {}, []
+    blocos = re.split(r"^##\s+", arquivo.read_text(encoding="utf-8"), flags=re.M)[1:]
+    for bloco in blocos:
+        linhas = bloco.splitlines()
+        nome = linhas[0].strip()
+        dados, texto, lendo_texto = {}, [], False
+        for linha in linhas[1:]:
+            if lendo_texto:
+                if linha.strip() in {"---", "***", "___"}:   # separador entre blocos
+                    break
+                texto.append(linha)
+                continue
+            achou = re.match(r"\s*([a-zA-Zçã]+)\s*:\s*(.*)$", linha)
+            if achou and achou.group(1).lower() in CAMPOS_CAMPANHA:
+                campo, valor = achou.group(1).lower(), achou.group(2).strip()
+                if campo == "mensagem":
+                    lendo_texto = True
+                    if valor:
+                        texto.append(valor)
+                else:
+                    dados[campo] = valor
+            elif linha.strip():
+                erros.append(f"{nome}: linha ignorada -> {linha.strip()[:40]}")
+        texto = "\n".join(texto).strip("\n")
+        if not dados.get("planilha"):
+            erros.append(f"{nome}: falta a linha \"planilha:\"")
+            continue
+        if not texto:
+            erros.append(f"{nome}: falta a \"mensagem:\"")
+            continue
+        # "id" identifica a MENSAGEM (é o que guarda quem já recebeu); a campanha
+        # é identificada por nome + público, então duas campanhas podem usar a
+        # mesma mensagem para públicos diferentes.
+        msg_id = dados.get("id") or _slug(nome)
+        publico = dados.get("publico", "")
+        chave = _slug(f"{nome} {publico}")
+        while chave in campanhas:
+            chave += "_2"
+        imagem = dados.get("imagem", "")
+        mensagens[msg_id] = {"nome": nome, "texto": texto}
+        if imagem:
+            mensagens[msg_id]["imagem"] = str(Path(PASTA_PLANILHAS) / imagem) if not Path(imagem).is_absolute() else imagem
+        campanhas[chave] = {"nome": nome, "publico": publico,
+                            "planilha": dados["planilha"], "mensagem": msg_id}
+        if dados.get("controle", "").lower() in {"sim", "s", "1", "true"}:
+            campanhas[chave]["usar_controle"] = True
+        if dados.get("excluir"):
+            campanhas[chave]["excluir"] = [x.strip() for x in dados["excluir"].split(",") if x.strip()]
+    return mensagens, campanhas, erros
+
+
+def carregar_campanhas(avisar=True):
+    """Se o Campanhas.md existir, ele substitui as campanhas/mensagens do código."""
+    global MENSAGENS, CAMPANHAS
+    mensagens, campanhas, erros = ler_arquivo_campanhas()
+    if avisar:
+        for erro in erros:
+            print(f"  ⚠️  Campanhas.md - {erro}")
+    if campanhas:
+        MENSAGENS = mensagens
+        CAMPANHAS = campanhas
+    return bool(campanhas)
+
 
 # --------------------------- registro no Markdown --------------------------
 #
@@ -1180,6 +1277,7 @@ def menu_inicial(chrome_ligado):
 
 def escolher_campanha():
     """Lista as campanhas prontas (com pendentes de cada uma) + a opção personalizada."""
+    carregar_campanhas()          # relê o Campanhas.md: campanha nova aparece na hora
     estado = estado_atual()
     chaves = list(CAMPANHAS)
     print(f"\n{LINHA}")
@@ -1414,7 +1512,10 @@ def garantir_chrome(driver):
 def main():
     driver = None
     manter_pc_acordado(True)
-    erro = ativar_campanha(CAMPANHA_INICIAL) if CAMPANHA_INICIAL in CAMPANHAS else "sem campanha inicial"
+    if carregar_campanhas():
+        print(f"  Campanhas lidas de {ARQUIVO_CAMPANHAS}")
+    inicial = CAMPANHA_INICIAL if CAMPANHA_INICIAL in CAMPANHAS else next(iter(CAMPANHAS), None)
+    erro = ativar_campanha(inicial) if inicial else "nenhuma campanha configurada"
     if erro:
         print(f"  ⚠️  Campanha inicial não ativada ({erro}). Usando a configuração padrão.")
         voltar_ao_menu()

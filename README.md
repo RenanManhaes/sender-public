@@ -96,6 +96,41 @@ Na primeira vez, escaneie o QR code. O perfil próprio do Chrome guarda o login 
 
 ---
 
+## Criar campanhas sem mexer no código
+
+Renomeie `dados/Campanhas-exemplo.md` para **`dados/Campanhas.md`** e edite nele. Se esse arquivo existir, ele substitui as campanhas e mensagens do `sender.py`, e o menu **[3] Trocar de campanha** relê o arquivo — dá para criar uma campanha com o Sender aberto.
+
+```markdown
+## Convite Jundiaí
+id: convite_jundiai
+publico: lista nova
+planilha: contatos-jundiai.xlsx
+imagem: banner.jpg
+excluir: clientes.xlsx
+controle: nao
+mensagem:
+Oi, {Nome}! Tudo bem?
+
+Vai ter encontro por aí e queria te convidar.
+
+Nos vemos lá! 🚀
+```
+
+| Linha | Obrigatória? | Para que serve |
+|---|---|---|
+| `## Nome` | sim | Nome no menu |
+| `id:` | recomendado | Identifica a **mensagem**: é por ele que o Sender lembra quem já recebeu. **Não mude depois de disparar** |
+| `publico:` | não | Aparece ao lado do nome |
+| `planilha:` | **sim** | Arquivo da pasta `dados/` |
+| `imagem:` | não | Envia como foto com o texto na legenda |
+| `excluir:` | não | Planilhas cujos números nunca recebem esta campanha |
+| `controle:` | não | `sim` = só envia para quem está "Não" na coluna de controle |
+| `mensagem:` | **sim** | O texto; `{Nome}` vira o primeiro nome e `*texto*` fica em negrito |
+
+Erros de preenchimento viram aviso no menu, sem derrubar o Sender.
+
+---
+
 ## Relatório para clientes
 
 ```bash
@@ -146,6 +181,7 @@ sender-whatsapp-bot/
 ├── requirements.txt
 ├── dados/                  # planilhas, imagens e registros (ignorado pelo git)
 │   ├── contatos-exemplo.xlsx
+│   ├── Campanhas-exemplo.md
 │   └── imagem-exemplo.jpg
 └── docs/
     ├── funcionamento.md    # fluxo, status, memória, pausa, validações

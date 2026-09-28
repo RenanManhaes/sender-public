@@ -2,6 +2,7 @@
 dados/*
 !dados/contatos-exemplo.xlsx
 !dados/imagem-exemplo.jpg
+!dados/Campanhas-exemplo.md
 *.xlsx
 !dados/contatos-exemplo.xlsx
 *.xls

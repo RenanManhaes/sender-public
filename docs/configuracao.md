@@ -6,6 +6,7 @@ Tudo fica no bloco `CONFIGURAÇÃO`, no topo do `sender.py`.
 
 | Variável | Padrão | Para que serve |
 |---|---|---|
+| `ARQUIVO_CAMPANHAS` | `dados/Campanhas.md` | Arquivo editável com as campanhas e mensagens (se existir, manda) |
 | `PASTA_PLANILHAS` | `dados/` | Pasta listada no menu **[4] Trocar a planilha** |
 | `PLANILHA` | `dados/contatos.xlsx` | Planilha usada ao abrir o Sender |
 | `LINHA_CABECALHO` | `0` | Linha do cabeçalho (0 = primeira). Detectada sozinha ao trocar pelo menu |
@@ -49,6 +50,8 @@ A memória de quem já recebeu é **separada por mensagem**: quem recebeu uma me
 `LINK_BASE` — formato do link do WhatsApp Web. Não precisa mudar.
 
 ## Campanhas
+
+> ⚠️ Se existir o arquivo **`Campanhas.md`** na pasta das planilhas, ele substitui `MENSAGENS` e `CAMPANHAS` do código (veja o README). O que está aqui embaixo vale como referência e como valor padrão quando o arquivo não existe.
 
 `CAMPANHAS` — o que aparece no menu **[3] Trocar de campanha**. Cada campanha tem:
 
