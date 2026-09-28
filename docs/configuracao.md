@@ -32,7 +32,7 @@ Tudo fica no bloco `CONFIGURAÇÃO`, no topo do `sender.py`.
 | `TEMPO_ANTES_ENTER` | `5` | Aguardando para enviar |
 | `TEMPO_TEXTO_EXTRA` | `10` | Tempo extra se o texto não apareceu na caixa |
 | `TEMPO_APOS_ENTER` | `5` | Enviando a mensagem (antes de conferir e trocar de página) |
-| `TEMPO_ENTRE_CONTATOS` | `(20, 60)` | Pausa aleatória entre um contato e outro |
+| `TEMPO_ENTRE_CONTATOS` | `(60, 180)` | Pausa aleatória entre um contato e outro (1 a 3 minutos) |
 | `LIMITE_ERROS_SEGUIDOS` | `3` | Erros seguidos até o freio automático |
 
 Os tempos "extra" só são usados quando necessário e terminam antes se a condição for atendida.

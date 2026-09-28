@@ -74,7 +74,7 @@ TEMPO_BUSCAR_EXTRA = 30               # se não carregou, espera até mais isso 
 TEMPO_TEXTO_EXTRA = 10                # se a mensagem não apareceu na caixa, espera até mais isso
 TEMPO_ANTES_ENTER = 5                 # espera antes de enviar
 TEMPO_APOS_ENTER = 5                  # garante que a mensagem saiu antes de trocar de página
-TEMPO_ENTRE_CONTATOS = (20, 60)       # aleatório entre min e máx, antes do próximo contato
+TEMPO_ENTRE_CONTATOS = (60, 180)      # aleatório entre min e máx, antes do próximo contato
 
 LIMITE_ERROS_SEGUIDOS = 3             # pausa o disparo e pergunta se deve continuar
 
