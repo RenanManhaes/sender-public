@@ -15,6 +15,7 @@
 | `imagem:` | não | Foto enviada junto, com o texto como legenda (JPG ou PNG) |
 | `excluir:` | não | Planilhas desta pasta cujos números **nunca** recebem esta campanha, ex.: `excluir: clientes.xlsx` (separe por vírgula) |
 | `controle:` | não | `sim` = só envia para quem está "Não" na coluna de controle, e marca "Sim" depois |
+| `segmentar:` | não | Coluna que divide o público (ex.: `segmentar: É membro?`). O Sender pergunta para qual valor enviar e conta quantos são |
 | `mensagem:` | **sim** | Tudo o que vier depois vira o texto. `{Nome}` = primeiro nome |
 
 Negrito do WhatsApp: `*assim*`.
@@ -52,3 +53,17 @@ Preparamos uma novidade para você: o site oficial do evento já está no ar.
 👉 https://exemplo.com.br/evento
 
 Nos vemos lá! 🚀
+
+---
+
+## Convite por público
+id: convite_publico
+publico: assinantes e não assinantes
+planilha: contatos.xlsx
+segmentar: É membro?
+mensagem:
+Oi, {Nome}! Tudo bem?
+
+Esta mensagem só vai para o público escolhido no menu do Sender.
+
+Até breve!

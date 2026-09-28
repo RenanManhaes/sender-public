@@ -108,6 +108,7 @@ planilha: contatos-jundiai.xlsx
 imagem: banner.jpg
 excluir: clientes.xlsx
 controle: nao
+segmentar: É membro?
 mensagem:
 Oi, {Nome}! Tudo bem?
 
@@ -125,7 +126,12 @@ Nos vemos lá! 🚀
 | `imagem:` | não | Envia como foto com o texto na legenda |
 | `excluir:` | não | Planilhas cujos números nunca recebem esta campanha |
 | `controle:` | não | `sim` = só envia para quem está "Não" na coluna de controle |
+| `segmentar:` | não | Coluna que divide a planilha (ex.: `É membro?`). Ao escolher a campanha, o Sender pergunta para qual público enviar e mostra quantos contatos tem cada um |
 | `mensagem:` | **sim** | O texto; `{Nome}` vira o primeiro nome e `*texto*` fica em negrito |
+
+A planilha pode estar na pasta `dados/` ou em qualquer subpasta dela: basta o nome do arquivo em `planilha:`.
+
+Para criar a campanha antes de ter o texto, deixe `((ESCREVER A MENSAGEM AQUI))` na mensagem: ela aparece no menu e conta os contatos, mas não dispara nem testa enquanto o rascunho estiver lá.
 
 Erros de preenchimento viram aviso no menu, sem derrubar o Sender.
 
