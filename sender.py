@@ -1303,6 +1303,7 @@ def descricao_mensagem():
 
 
 MARCA_RASCUNHO = "((escrever"          # a mensagem ainda é um rascunho no Campanhas.md
+RASCUNHO_VISIVEL = "((ESCREVER A MENSAGEM AQUI))"
 
 
 def mensagem_e_rascunho():
@@ -1314,7 +1315,7 @@ def aviso_rascunho():
     print(f"\n{LINHA}")
     print("  ✋ A mensagem desta campanha ainda não foi escrita.")
     print(f"     Abra {ARQUIVO_CAMPANHAS}, troque o trecho")
-    print(f"     \"{MARCA_RASCUNHO}...\" pelo texto e volte aqui.")
+    print(f"     {RASCUNHO_VISIVEL} pelo texto da mensagem e volte aqui.")
     print("     Nada é enviado enquanto o rascunho estiver lá.")
     print(LINHA)
     voltar_ao_menu()
