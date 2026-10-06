@@ -32,7 +32,7 @@ Tudo fica no bloco `CONFIGURAÇÃO`, no topo do `sender.py`.
 | `TEMPO_ANTES_ENTER` | `5` | Aguardando para enviar |
 | `TEMPO_TEXTO_EXTRA` | `10` | Tempo extra se o texto não apareceu na caixa |
 | `TEMPO_APOS_ENTER` | `5` | Enviando a mensagem (antes de conferir e trocar de página) |
-| `TEMPO_ENTRE_CONTATOS` | `(20, 60)` | Pausa aleatória entre um contato e outro |
+| `TEMPO_ENTRE_CONTATOS` | `(60, 180)` | Pausa aleatória entre um contato e outro (1 a 3 minutos) |
 | `LIMITE_ERROS_SEGUIDOS` | `3` | Erros seguidos até o freio automático |
 
 Os tempos "extra" só são usados quando necessário e terminam antes se a condição for atendida.
@@ -63,6 +63,7 @@ A memória de quem já recebeu é **separada por mensagem**: quem recebeu uma me
 | `mensagem` | `"convite_imagem"` | Chave em `MENSAGENS` |
 | `excluir` | `["clientes.xlsx"]` | Planilhas (na mesma pasta) cujos números **nunca** recebem esta campanha |
 | `usar_controle` | `True` | Só recebe quem está "Não" na coluna de controle e marca "Sim" após o envio |
+| `segmentar` | `"É membro?"` | Coluna que divide o público. Ao ativar a campanha, o Sender lista os valores da coluna com a contagem de contatos e pergunta para qual enviar (ou "Todos"). O público escolhido aparece no cartão do menu e no `Registros.md` |
 
 `CAMPANHA_INICIAL` — a campanha que já vem escolhida ao abrir o Sender.
 
